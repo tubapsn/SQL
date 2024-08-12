@@ -1,0 +1,29 @@
+select 
+  CNFG_MACHINE.NAME "MACHINE",
+  convert(int,(sum(UPTIME_CNT)*1.0 / NULLIF(sum(PLANNED_TIME_CNT),0)*100)) "OEE_A",
+  convert(int,(sum(PERF_CNT)*1.0 / NULLIF(sum(UPTIME_CNT),0) * 100)) "OEE_P",
+  convert(int,(sum(GOODS_QTY)*1.0 / NULLIF((sum(GOODS_QTY) + sum(SCRAP_QTY)),0) * 100)) "OEE_Q",
+  convert(int,((sum(UPTIME_CNT)*1.0 / NULLIF(sum(PLANNED_TIME_CNT),0))*
+  (sum(PERF_CNT)*1.0 / NULLIF(sum(UPTIME_CNT),0)))*100) "OEE",
+  (sum(PLANNED_DOWN)+sum(PLANNED_TIME_CNT)) "TOTAL_PROD_TIME",
+  sum(UPTIME_CNT) "UPTIME_CNT", 
+  sum(PLANNED_TIME_CNT) "PLANNED_TIME_CNT", 
+  sum(PERF_CNT) "PERF_CNT", 
+  sum(GOODS_QTY) "GOODS_QTY", 
+  sum(SCRAP_QTY) "SCRAP_QTY",
+  sum(dbo.HIST_OEE.PLANNED_DOWN) "PLANNED_DOWN",
+  sum(dbo.HIST_OEE.UNPLANNED_DOWN) - sum(PREPTIME) "UNPLANNED_DOWN" ,
+  sum(PREPTIME) "SETUP"
+FROM HIST_OEE,CNFG_MACHINE
+where
+  HIST_OEE.MACHINE_ID = CNFG_MACHINE.ID  and 
+--GK - 02122020
+   -- (CNFG_MACHINE.MACHINE_TYPE < 1000 or CNFG_MACHINE.ID > 1000   )
+ -- and 
+  REC_TIME between '2022.03.16 08:00:00' and dateadd(hour,1,'2022.03.16 15:59:59')
+  and HIST_OEE.MACHINE_ID in (61)
+ 
+and UPTIME_CNT <> 0
+  
+group by CNFG_MACHINE.NAME
+order by OEE desc
